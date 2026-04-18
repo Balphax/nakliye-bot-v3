@@ -1,0 +1,19 @@
+{
+  "name": "nakliye-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Nakliye Mesaj Filtresi",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
+    "@hapi/boom": "^10.0.1",
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1",
+    "qrcode": "^1.5.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

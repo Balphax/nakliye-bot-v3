@@ -9,333 +9,131 @@
   <title>NakliyeBot</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-
   <style>
     :root {
-      --bg:        #0a0f1e;
-      --surface:   #111827;
-      --card:      #1a2235;
-      --border:    #243049;
-      --accent:    #f59e0b;
-      --accent2:   #ef4444;
-      --green:     #10b981;
-      --text:      #f1f5f9;
-      --muted:     #64748b;
-      --unread-glow: 0 0 0 2px rgba(245,158,11,0.35), 0 4px 24px rgba(245,158,11,0.12);
+      --bg:#0a0f1e; --surface:#111827; --card:#1a2235; --border:#243049;
+      --accent:#f59e0b; --accent2:#ef4444; --green:#10b981;
+      --text:#f1f5f9; --muted:#64748b;
+      --unread-glow:0 0 0 2px rgba(245,158,11,0.35),0 4px 24px rgba(245,158,11,0.12);
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Barlow', sans-serif;
-      min-height: 100dvh;
-      overflow-x: hidden;
-    }
-
-    /* ── HEADER ── */
-    header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(10,15,30,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .logo {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 800; font-size: 22px; letter-spacing: 1px;
-      color: var(--accent);
-    }
-    .logo span { color: var(--text); font-weight: 400; }
-    .status-pill {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
-      padding: 5px 10px; border-radius: 20px;
-      background: var(--surface); border: 1px solid var(--border);
-      transition: all 0.3s;
-    }
-    .status-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--muted); transition: all 0.3s;
-    }
-    .status-dot.connected { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse-green 2s infinite; }
-    .status-dot.error { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
-    @keyframes pulse-green { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-    /* ── TABS ── */
-    .tabs {
-      display: flex; border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .tab {
-      flex: 1; padding: 12px 0; text-align: center;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-      color: var(--muted); cursor: pointer; border: none; background: none;
-      border-bottom: 2px solid transparent; transition: all 0.2s;
-    }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .badge {
-      display: inline-block; background: var(--accent2); color: #fff;
-      font-size: 10px; font-weight: 800; border-radius: 10px;
-      padding: 1px 6px; margin-left: 4px; vertical-align: middle;
-    }
-
-    /* ── PANELS ── */
-    .panel { display: none; }
-    .panel.active { display: block; }
-
-    /* ── QR / CONNECT SCREEN ── */
-    .connect-screen {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 40px 24px; gap: 20px; text-align: center;
-    }
-    .qr-box {
-      background: #fff; border-radius: 16px;
-      padding: 16px; width: 220px; height: 220px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .qr-box img { width: 188px; height: 188px; }
-    .qr-placeholder {
-      width: 188px; height: 188px; background: #f3f4f6;
-      border-radius: 8px; display: flex; align-items: center;
-      justify-content: center; color: #9ca3af; font-size: 13px;
-    }
-    .connect-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 20px;
-    }
-    .connect-steps {
-      text-align: left; width: 100%; max-width: 320px;
-    }
-    .step {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid var(--border);
-    }
-    .step:last-child { border-bottom: none; }
-    .step-num {
-      min-width: 26px; height: 26px; border-radius: 50%;
-      background: var(--accent); color: #000;
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 800; font-size: 14px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .step-text { font-size: 14px; color: var(--muted); line-height: 1.5; padding-top: 2px; }
-    .step-text strong { color: var(--text); }
-
-    /* ── MESSAGES ── */
-    .msg-toolbar {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 14px; border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .msg-count { font-size: 13px; color: var(--muted); }
-    .btn-clear {
-      font-size: 12px; color: var(--accent2); background: none;
-      border: 1px solid var(--accent2); border-radius: 8px;
-      padding: 4px 10px; cursor: pointer; font-weight: 600;
-    }
-
-    .messages-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
-
-    .msg-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-      animation: slideIn 0.3s ease;
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-    .msg-card:active { transform: scale(0.98); }
-    .msg-card.unread {
-      border-color: var(--accent);
-      box-shadow: var(--unread-glow);
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    .msg-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .msg-meta { display: flex; flex-direction: column; gap: 2px; }
-    .msg-sender {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 16px; color: var(--text);
-    }
-    .msg-group { font-size: 11px; color: var(--muted); }
-    .msg-time { font-size: 11px; color: var(--muted); white-space: nowrap; }
-
-    .keyword-tag {
-      display: inline-block;
-      background: rgba(245,158,11,0.15);
-      color: var(--accent);
-      border: 1px solid rgba(245,158,11,0.3);
-      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
-      border-radius: 6px; padding: 2px 7px;
-      margin-bottom: 8px;
-    }
-
-    .msg-body {
-      font-size: 14px; line-height: 1.6; color: #cbd5e1;
-      word-break: break-word;
-    }
-    .msg-body .highlight {
-      color: var(--accent); font-weight: 700;
-      background: rgba(245,158,11,0.1); border-radius: 3px; padding: 0 2px;
-    }
-
-    /* Phone chips */
-    .phones-row {
-      display: flex; flex-wrap: wrap; gap: 8px;
-      margin-top: 12px; padding-top: 10px;
-      border-top: 1px solid var(--border);
-    }
-    .phone-chip {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(16,185,129,0.1);
-      border: 1px solid rgba(16,185,129,0.3);
-      border-radius: 20px; padding: 6px 12px;
-      cursor: pointer; transition: all 0.2s;
-      text-decoration: none;
-    }
-    .phone-chip:active { background: rgba(16,185,129,0.25); }
-    .phone-icon { font-size: 14px; }
-    .phone-num { font-size: 13px; font-weight: 600; color: var(--green); letter-spacing: 0.5px; }
-
-    .empty-state {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 60px 24px; gap: 14px; text-align: center; color: var(--muted);
-    }
-    .empty-icon { font-size: 48px; opacity: 0.4; }
-    .empty-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; }
-
-    /* ── SETTINGS ── */
-    .settings-panel { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-    .settings-section {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; overflow: hidden;
-    }
-    .settings-title {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-      color: var(--muted); padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .settings-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px; border-bottom: 1px solid var(--border);
-    }
-    .settings-row:last-child { border-bottom: none; }
-    .settings-label { font-size: 15px; font-weight: 500; }
-    .settings-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-
-    /* Toggle */
-    .toggle { position: relative; width: 46px; height: 26px; }
-    .toggle input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute; inset: 0; background: var(--border);
-      border-radius: 13px; cursor: pointer; transition: 0.3s;
-    }
-    .slider::before {
-      content: ''; position: absolute;
-      width: 20px; height: 20px; left: 3px; bottom: 3px;
-      background: #fff; border-radius: 50%; transition: 0.3s;
-    }
-    input:checked + .slider { background: var(--accent); }
-    input:checked + .slider::before { transform: translateX(20px); }
-
-    /* Keywords input */
-    .keywords-wrap { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-    .keywords-chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; }
-    .kw-chip {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35);
-      color: var(--accent); border-radius: 20px; padding: 5px 10px;
-      font-size: 13px; font-weight: 600;
-    }
-    .kw-remove {
-      background: none; border: none; color: var(--accent);
-      cursor: pointer; font-size: 14px; padding: 0; line-height: 1;
-    }
-    .kw-input-row { display: flex; gap: 8px; }
-    .kw-input {
-      flex: 1; background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: 14px;
-      outline: none;
-    }
-    .kw-input:focus { border-color: var(--accent); }
-    .btn-add {
-      background: var(--accent); color: #000; border: none;
-      border-radius: 10px; padding: 9px 14px;
-      font-weight: 700; font-size: 14px; cursor: pointer;
-    }
-
-    /* Notification badge on new message */
-    @keyframes ring {
-      0%  { transform: rotate(0deg); }
-      10% { transform: rotate(15deg); }
-      20% { transform: rotate(-12deg); }
-      30% { transform: rotate(10deg); }
-      40% { transform: rotate(-8deg); }
-      50% { transform: rotate(5deg); }
-      60% { transform: rotate(0deg); }
-      100%{ transform: rotate(0deg); }
-    }
-    .bell-ring { animation: ring 0.6s ease; }
-
-    /* ── TOAST ── */
-    #toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-      background: var(--card); border: 1px solid var(--accent);
-      color: var(--text); border-radius: 12px;
-      padding: 12px 20px; font-size: 14px; font-weight: 600;
-      z-index: 999; transition: transform 0.3s; white-space: nowrap;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); }
-
-    /* Sound wave animation on new msg */
-    .sound-wave {
-      display: flex; align-items: flex-end; gap: 2px; height: 16px;
-    }
-    .sound-wave span {
-      display: block; width: 3px; background: var(--accent); border-radius: 2px;
-      animation: wave 0.8s ease-in-out infinite;
-    }
-    .sound-wave span:nth-child(2) { animation-delay: 0.1s; }
-    .sound-wave span:nth-child(3) { animation-delay: 0.2s; }
-    .sound-wave span:nth-child(4) { animation-delay: 0.3s; }
-    @keyframes wave {
-      0%,100%{ height: 4px; } 50%{ height: 14px; }
-    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100dvh;overflow-x:hidden}
+    header{position:sticky;top:0;z-index:100;background:rgba(10,15,30,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+    .logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:1px;color:var(--accent)}
+    .logo span{color:var(--text);font-weight:400}
+    .status-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--surface);border:1px solid var(--border)}
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:all 0.3s}
+    .status-dot.connected{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse-green 2s infinite}
+    .status-dot.error{background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+    @keyframes pulse-green{0%,100%{opacity:1}50%{opacity:0.5}}
+    .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface)}
+    .tab{flex:1;padding:12px 0;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.2s}
+    .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+    .badge{display:inline-block;background:var(--accent2);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px;margin-left:4px;vertical-align:middle}
+    .panel{display:none}.panel.active{display:block}
+    /* Connect */
+    .connect-screen{display:flex;flex-direction:column;align-items:center;padding:40px 24px;gap:20px;text-align:center}
+    .qr-box{background:#fff;border-radius:16px;padding:16px;width:220px;height:220px;display:flex;align-items:center;justify-content:center}
+    .qr-box img{width:188px;height:188px}
+    .qr-placeholder{width:188px;height:188px;background:#f3f4f6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:13px}
+    .connect-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px}
+    .connect-steps{text-align:left;width:100%;max-width:320px}
+    .step{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+    .step:last-child{border-bottom:none}
+    .step-num{min-width:26px;height:26px;border-radius:50%;background:var(--accent);color:#000;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center}
+    .step-text{font-size:14px;color:var(--muted);line-height:1.5;padding-top:2px}
+    .step-text strong{color:var(--text)}
+    /* Messages */
+    .msg-toolbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .msg-count{font-size:13px;color:var(--muted)}
+    .btn-clear{font-size:12px;color:var(--accent2);background:none;border:1px solid var(--accent2);border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:600}
+    .messages-list{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+    .msg-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;animation:slideIn 0.3s ease;transition:transform 0.1s}
+    .msg-card:active{transform:scale(0.98)}
+    .msg-card.unread{border-color:var(--accent);box-shadow:var(--unread-glow)}
+    @keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+    .msg-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .msg-meta{display:flex;flex-direction:column;gap:2px}
+    .msg-sender{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;color:var(--text)}
+    .msg-group{font-size:11px;color:var(--muted)}
+    .msg-time{font-size:11px;color:var(--muted);white-space:nowrap}
+    .keyword-tag{display:inline-block;background:rgba(245,158,11,0.15);color:var(--accent);border:1px solid rgba(245,158,11,0.3);font-size:11px;font-weight:700;letter-spacing:0.5px;border-radius:6px;padding:2px 7px;margin-bottom:8px}
+    .msg-body{font-size:14px;line-height:1.6;color:#cbd5e1;word-break:break-word;white-space:pre-wrap}
+    .msg-body .highlight{color:var(--accent);font-weight:700;background:rgba(245,158,11,0.1);border-radius:3px;padding:0 2px}
+    .msg-body-short{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+    .btn-expand{background:none;border:none;color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;padding:6px 0;display:block}
+    .phones-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+    .phone-chip{display:flex;align-items:center;gap:10px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;padding:10px 14px;cursor:pointer;transition:all 0.2s;text-decoration:none;flex:1;min-width:150px}
+    .phone-chip:active{background:rgba(16,185,129,0.25);transform:scale(0.97)}
+    .phone-icon{font-size:20px}
+    .phone-info{display:flex;flex-direction:column}
+    .phone-label{font-size:10px;color:var(--muted);font-weight:700;letter-spacing:0.5px;text-transform:uppercase}
+    .phone-num{font-size:16px;font-weight:700;color:var(--green);letter-spacing:0.5px}
+    .empty-state{display:flex;flex-direction:column;align-items:center;padding:60px 24px;gap:14px;text-align:center;color:var(--muted)}
+    .empty-icon{font-size:48px;opacity:0.4}
+    .empty-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700}
+    /* Settings */
+    .settings-panel{padding:16px;display:flex;flex-direction:column;gap:16px}
+    .settings-section{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+    .settings-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid var(--border)}
+    .settings-row:last-child{border-bottom:none}
+    .settings-label{font-size:15px;font-weight:500}
+    .settings-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .toggle{position:relative;width:46px;height:26px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .slider{position:absolute;inset:0;background:var(--border);border-radius:13px;cursor:pointer;transition:0.3s}
+    .slider::before{content:'';position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
+    input:checked+.slider{background:var(--accent)}
+    input:checked+.slider::before{transform:translateX(20px)}
+    .keywords-wrap{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+    .keywords-chips{display:flex;flex-wrap:wrap;gap:8px;min-height:36px}
+    .kw-chip{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.35);color:var(--accent);border-radius:20px;padding:5px 10px;font-size:13px;font-weight:600}
+    .kw-remove{background:none;border:none;color:var(--accent);cursor:pointer;font-size:14px;padding:0;line-height:1}
+    .kw-input-row{display:flex;gap:8px}
+    .kw-input{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:9px 12px;font-size:14px;outline:none}
+    .kw-input:focus{border-color:var(--accent)}
+    .btn-add{background:var(--accent);color:#000;border:none;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer}
+    /* Ses seçimi */
+    .sound-options{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+    .sound-option{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:all 0.2s;background:var(--surface)}
+    .sound-option.selected{border-color:var(--accent);background:rgba(245,158,11,0.08)}
+    .sound-option-left{display:flex;align-items:center;gap:10px}
+    .sound-icon{font-size:20px}
+    .sound-name{font-size:14px;font-weight:600}
+    .sound-desc{font-size:11px;color:var(--muted);margin-top:1px}
+    .btn-preview{background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+    .btn-preview:active{background:var(--border)}
+    /* Saat bazlı */
+    .time-range-wrap{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+    .time-row{display:flex;align-items:center;gap:8px}
+    .time-label{font-size:13px;color:var(--muted);width:60px;flex-shrink:0}
+    .time-input{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 10px;font-size:14px;outline:none;width:95px;flex-shrink:0}
+    .time-input:focus{border-color:var(--accent)}
+    .time-sound-select{flex:1;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:7px 8px;font-size:13px;outline:none}
+    .time-sound-select:focus{border-color:var(--accent)}
+    .time-info{font-size:12px;color:var(--muted);background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:8px 10px;line-height:1.6}
+    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--accent);color:var(--text);border-radius:12px;padding:12px 20px;font-size:14px;font-weight:600;z-index:999;transition:transform 0.3s;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+    #toast.show{transform:translateX(-50%) translateY(0)}
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo">NAKLİYE<span>Bot</span></div>
-  <div class="status-pill" id="statusPill">
+  <div class="status-pill">
     <div class="status-dot" id="statusDot"></div>
     <span id="statusText">Bağlanıyor...</span>
   </div>
 </header>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('messages')">
-    📦 Mesajlar <span class="badge" id="unreadBadge" style="display:none">0</span>
-  </button>
+  <button class="tab active" onclick="switchTab('messages')">📦 Mesajlar <span class="badge" id="unreadBadge" style="display:none">0</span></button>
   <button class="tab" onclick="switchTab('connect')" id="connectTab">🔗 Bağlan</button>
   <button class="tab" onclick="switchTab('settings')">⚙️ Ayarlar</button>
 </div>
 
-<!-- MESSAGES PANEL -->
+<!-- MESSAGES -->
 <div class="panel active" id="panel-messages">
   <div class="msg-toolbar">
     <div class="msg-count" id="msgCount">0 mesaj</div>
@@ -344,7 +142,7 @@
   <div id="messagesList" class="messages-list"></div>
 </div>
 
-<!-- CONNECT PANEL -->
+<!-- CONNECT -->
 <div class="panel" id="panel-connect">
   <div class="connect-screen">
     <div class="qr-box" id="qrBox">
@@ -352,27 +150,15 @@
     </div>
     <div class="connect-title" id="connectTitle">WhatsApp'ı Bağla</div>
     <div class="connect-steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-text">Telefonunda <strong>WhatsApp</strong>'ı aç</div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-text"><strong>⋮ Menü → Bağlı Cihazlar → Cihaz Bağla</strong></div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-text">Yukarıdaki <strong>QR kodu</strong> okut</div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-text">Bağlantı otomatik kurulur, <strong>hazırsın!</strong></div>
-      </div>
+      <div class="step"><div class="step-num">1</div><div class="step-text">Telefonunda <strong>WhatsApp</strong>'ı aç</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-text"><strong>⋮ Menü → Bağlı Cihazlar → Cihaz Bağla</strong></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-text">Yukarıdaki <strong>QR kodu</strong> okut</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-text">Bağlantı otomatik kurulur, <strong>hazırsın!</strong></div></div>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS PANEL -->
+<!-- SETTINGS -->
 <div class="panel" id="panel-settings">
   <div class="settings-panel">
 
@@ -381,44 +167,80 @@
       <div class="keywords-wrap">
         <div class="keywords-chips" id="keywordsChips"></div>
         <div class="kw-input-row">
-          <input class="kw-input" id="kwInput" placeholder="Şehir veya kelime ekle..." maxlength="30"
-            onkeydown="if(event.key==='Enter') addKeyword()" />
+          <input class="kw-input" id="kwInput" placeholder="Şehir veya kelime ekle..." maxlength="30" onkeydown="if(event.key==='Enter') addKeyword()" />
           <button class="btn-add" onclick="addKeyword()">+ Ekle</button>
         </div>
       </div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-title">🔔 Bildirimler</div>
+      <div class="settings-title">🔔 Bildirim Sesi</div>
       <div class="settings-row">
-        <div>
-          <div class="settings-label">Bildirim Sesi</div>
-          <div class="settings-sub">Yeni mesajda ses çalsın</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="soundToggle" checked onchange="saveSettings()" />
-          <span class="slider"></span>
-        </label>
+        <div><div class="settings-label">Ses Aktif</div><div class="settings-sub">Yeni mesajda ses çalsın</div></div>
+        <label class="toggle"><input type="checkbox" id="soundToggle" checked onchange="saveSettings()" /><span class="slider"></span></label>
       </div>
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Sesli Okuma (TTS)</div>
-          <div class="settings-sub">Mesajı otomatik sesli oku</div>
+      <div class="sound-options">
+        <div class="sound-option selected" data-sound="double_beep" onclick="selectSound('double_beep',this)">
+          <div class="sound-option-left"><div class="sound-icon">🔔</div><div><div class="sound-name">Çift Bip</div><div class="sound-desc">Varsayılan — kısa ve net</div></div></div>
+          <button class="btn-preview" onclick="event.stopPropagation();previewSound('double_beep')">▶ Dene</button>
         </div>
-        <label class="toggle">
-          <input type="checkbox" id="ttsToggle" onchange="saveSettings()" />
-          <span class="slider"></span>
-        </label>
+        <div class="sound-option" data-sound="long_beep" onclick="selectSound('long_beep',this)">
+          <div class="sound-option-left"><div class="sound-icon">📢</div><div><div class="sound-name">Uzun Bip</div><div class="sound-desc">Gece için — daha belirgin</div></div></div>
+          <button class="btn-preview" onclick="event.stopPropagation();previewSound('long_beep')">▶ Dene</button>
+        </div>
+        <div class="sound-option" data-sound="triple_beep" onclick="selectSound('triple_beep',this)">
+          <div class="sound-option-left"><div class="sound-icon">🚨</div><div><div class="sound-name">Üçlü Alarm</div><div class="sound-desc">Acil iş — dikkat çekici</div></div></div>
+          <button class="btn-preview" onclick="event.stopPropagation();previewSound('triple_beep')">▶ Dene</button>
+        </div>
+        <div class="sound-option" data-sound="soft_chime" onclick="selectSound('soft_chime',this)">
+          <div class="sound-option-left"><div class="sound-icon">🎵</div><div><div class="sound-name">Yumuşak Çan</div><div class="sound-desc">Gündüz için — rahatsız etmez</div></div></div>
+          <button class="btn-preview" onclick="event.stopPropagation();previewSound('soft_chime')">▶ Dene</button>
+        </div>
+        <div class="sound-option" data-sound="truck_horn" onclick="selectSound('truck_horn',this)">
+          <div class="sound-option-left"><div class="sound-icon">🚛</div><div><div class="sound-name">Kamyon Korna</div><div class="sound-desc">Kaçırma — en dikkat çekici</div></div></div>
+          <button class="btn-preview" onclick="event.stopPropagation();previewSound('truck_horn')">▶ Dene</button>
+        </div>
       </div>
     </div>
 
     <div class="settings-section">
-      <div class="settings-title">ℹ️ Hakkında</div>
+      <div class="settings-title">🌙 Saat Bazlı Ses Ayarı</div>
       <div class="settings-row">
-        <div>
-          <div class="settings-label">NakliyeBot</div>
-          <div class="settings-sub">WhatsApp Mesaj Filtresi v1.0</div>
+        <div><div class="settings-label">Saat Bazlı Ses</div><div class="settings-sub">Gece/gündüz farklı ses çalsın</div></div>
+        <label class="toggle"><input type="checkbox" id="timeBasedToggle" onchange="saveTimeSettings()" /><span class="slider"></span></label>
+      </div>
+      <div class="time-range-wrap">
+        <div class="time-info">⏰ Gündüz saatleri arasında <strong>gündüz sesi</strong>, dışında <strong>gece sesi</strong> çalar.</div>
+        <div class="time-row">
+          <div class="time-label">☀️ Gündüz</div>
+          <input type="time" class="time-input" id="dayStart" value="07:00" onchange="saveTimeSettings()" />
+          <select class="time-sound-select" id="daySound" onchange="saveTimeSettings()">
+            <option value="soft_chime">🎵 Yumuşak Çan</option>
+            <option value="double_beep">🔔 Çift Bip</option>
+            <option value="triple_beep">🚨 Üçlü Alarm</option>
+            <option value="long_beep">📢 Uzun Bip</option>
+            <option value="truck_horn">🚛 Kamyon Korna</option>
+          </select>
         </div>
+        <div class="time-row">
+          <div class="time-label">🌙 Gece</div>
+          <input type="time" class="time-input" id="nightStart" value="22:00" onchange="saveTimeSettings()" />
+          <select class="time-sound-select" id="nightSound" onchange="saveTimeSettings()">
+            <option value="long_beep">📢 Uzun Bip</option>
+            <option value="soft_chime">🎵 Yumuşak Çan</option>
+            <option value="double_beep">🔔 Çift Bip</option>
+            <option value="triple_beep">🚨 Üçlü Alarm</option>
+            <option value="truck_horn">🚛 Kamyon Korna</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-title">🔊 Sesli Okuma</div>
+      <div class="settings-row">
+        <div><div class="settings-label">Sesli Okuma (TTS)</div><div class="settings-sub">Mesajı otomatik sesli oku</div></div>
+        <label class="toggle"><input type="checkbox" id="ttsToggle" onchange="saveSettings()" /><span class="slider"></span></label>
       </div>
     </div>
 
@@ -427,285 +249,251 @@
 
 <div id="toast"></div>
 
-<!-- Bildirim sesi (Web Audio API ile oluşturulacak) -->
 <script>
-// ── Audio ──
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
+function getCtx(){if(!audioCtx)audioCtx=new AudioCtx();return audioCtx}
 
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioCtx();
-  return audioCtx;
+function playSound(type){
+  try{
+    const ctx=getCtx();
+    if(ctx.state==='suspended')ctx.resume();
+    ({double_beep:()=>playDoubleBip(ctx),long_beep:()=>playLongBip(ctx),triple_beep:()=>playTripleAlarm(ctx),soft_chime:()=>playSoftChime(ctx),truck_horn:()=>playTruckHorn(ctx)}[type]||playDoubleBip)(ctx);
+  }catch(e){}
 }
 
-function playNotificationSound() {
-  try {
-    const ctx = getAudioCtx();
-    // Çift bip - nakliyeye özgü ses
-    const times = [0, 0.18];
-    times.forEach(delay => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, ctx.currentTime + delay);
-      osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + delay + 0.12);
-      gain.gain.setValueAtTime(0.4, ctx.currentTime + delay);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
-      osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.15);
-    });
-  } catch(e) {}
+function playDoubleBip(ctx){
+  [0,0.2].forEach(d=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sine';o.frequency.setValueAtTime(880,ctx.currentTime+d);
+    o.frequency.exponentialRampToValueAtTime(660,ctx.currentTime+d+0.12);
+    g.gain.setValueAtTime(0.4,ctx.currentTime+d);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d+0.15);
+    o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+0.15);
+  });
+}
+function playLongBip(ctx){
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);
+  o.type='sine';o.frequency.value=750;
+  g.gain.setValueAtTime(0,ctx.currentTime);
+  g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+0.05);
+  g.gain.setValueAtTime(0.5,ctx.currentTime+0.5);
+  g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.9);
+  o.start(ctx.currentTime);o.stop(ctx.currentTime+0.95);
+}
+function playTripleAlarm(ctx){
+  [0,0.22,0.44].forEach(d=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='square';o.frequency.value=1000;
+    g.gain.setValueAtTime(0.25,ctx.currentTime+d);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d+0.18);
+    o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+0.18);
+  });
+}
+function playSoftChime(ctx){
+  [523,659,784].forEach((f,i)=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sine';o.frequency.value=f;
+    const t=ctx.currentTime+i*0.18;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.3,t+0.04);
+    g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+    o.start(t);o.stop(t+0.55);
+  });
+}
+function playTruckHorn(ctx){
+  [220,277,330].forEach(f=>{
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sawtooth';o.frequency.value=f;
+    g.gain.setValueAtTime(0.15,ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.2,ctx.currentTime+0.1);
+    g.gain.setValueAtTime(0.2,ctx.currentTime+0.6);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.9);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.95);
+  });
 }
 
-function speak(text) {
-  if (!window.speechSynthesis) return;
-  const utt = new SpeechSynthesisUtterance(text);
-  utt.lang = 'tr-TR';
-  utt.rate = 0.95;
-  window.speechSynthesis.speak(utt);
-}
-
-// ── State ──
-let messages = [];
-let settings = { keywords: ['Kocaeli'], soundEnabled: true, ttsEnabled: false };
-let unreadCount = 0;
-let currentTab = 'messages';
-
-// ── Socket ──
-const socket = io();
-
-socket.on('status', ({ connected, message }) => {
-  const dot = document.getElementById('statusDot');
-  const text = document.getElementById('statusText');
-  dot.className = 'status-dot' + (connected ? ' connected' : ' error');
-  text.textContent = connected ? 'Bağlı' : 'Bağlı Değil';
-
-  const connectTab = document.getElementById('connectTab');
-  connectTab.textContent = connected ? '✅ Bağlı' : '🔗 Bağlan';
-});
-
-socket.on('qr', (qrData) => {
-  document.getElementById('qrPlaceholder').style.display = 'none';
-  let img = document.getElementById('qrImage');
-  if (!img) {
-    img = document.createElement('img');
-    img.id = 'qrImage';
-    document.getElementById('qrBox').appendChild(img);
+function getCurrentSound(){
+  if(settings.timeBased){
+    const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();
+    const [dh,dm]=(settings.dayStart||'07:00').split(':').map(Number);
+    const [nh,nm]=(settings.nightStart||'22:00').split(':').map(Number);
+    return(nowMin>=dh*60+dm&&nowMin<nh*60+nm)?settings.daySound||'soft_chime':settings.nightSound||'long_beep';
   }
-  img.src = qrData;
-  document.getElementById('connectTitle').textContent = 'QR Kodu Okutun';
-});
-
-socket.on('new_message', (msg) => {
-  messages.unshift(msg);
-  unreadCount++;
-  renderMessages();
-  updateBadge();
-
-  if (settings.soundEnabled) playNotificationSound();
-  if (settings.ttsEnabled) {
-    const shortText = msg.body.substring(0, 120);
-    speak(shortText);
-  }
-  if (currentTab !== 'messages') showToast(`📦 Yeni: ${msg.keyword} mesajı!`);
-});
-
-socket.on('messages_cleared', () => {
-  messages = [];
-  unreadCount = 0;
-  renderMessages();
-  updateBadge();
-});
-
-socket.on('settings_updated', (s) => {
-  settings = s;
-  renderSettings();
-});
-
-// ── Init ──
-async function init() {
-  try {
-    const [msgRes, settRes] = await Promise.all([
-      fetch('/api/messages').then(r => r.json()),
-      fetch('/api/settings').then(r => r.json())
-    ]);
-    messages = msgRes;
-    settings = settRes;
-    unreadCount = messages.filter(m => !m.read).length;
-    renderMessages();
-    renderSettings();
-    updateBadge();
-  } catch(e) {
-    console.error('Init error:', e);
-  }
+  return settings.selectedSound||'double_beep';
 }
 
-// ── Render Messages ──
-function renderMessages() {
-  const list = document.getElementById('messagesList');
-  document.getElementById('msgCount').textContent = `${messages.length} mesaj`;
+function previewSound(type){playSound(type)}
+function selectSound(type,el){
+  document.querySelectorAll('.sound-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  settings.selectedSound=type;
+  saveSettings();
+}
+function speak(text){
+  if(!window.speechSynthesis)return;
+  const u=new SpeechSynthesisUtterance(text);u.lang='tr-TR';u.rate=0.95;
+  window.speechSynthesis.speak(u);
+}
 
-  if (messages.length === 0) {
-    list.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📡</div>
-        <div class="empty-title">Henüz mesaj yok</div>
-        <div>WhatsApp gruplarından filtreli<br>mesajlar burada görünecek</div>
-      </div>`;
+let messages=[],settings={keywords:['Kocaeli'],soundEnabled:true,ttsEnabled:false,selectedSound:'double_beep',timeBased:false,dayStart:'07:00',nightStart:'22:00',daySound:'soft_chime',nightSound:'long_beep'};
+let unreadCount=0,currentTab='messages',expandedMessages=new Set();
+
+const socket=io();
+
+socket.on('status',({connected})=>{
+  document.getElementById('statusDot').className='status-dot'+(connected?' connected':' error');
+  document.getElementById('statusText').textContent=connected?'Bağlı':'Bağlı Değil';
+  document.getElementById('connectTab').textContent=connected?'✅ Bağlı':'🔗 Bağlan';
+});
+
+socket.on('qr',qrData=>{
+  document.getElementById('qrPlaceholder').style.display='none';
+  let img=document.getElementById('qrImage');
+  if(!img){img=document.createElement('img');img.id='qrImage';document.getElementById('qrBox').appendChild(img);}
+  img.src=qrData;
+  document.getElementById('connectTitle').textContent='QR Kodu Okutun';
+});
+
+socket.on('new_message',msg=>{
+  messages.unshift(msg);unreadCount++;
+  renderMessages();updateBadge();
+  if(settings.soundEnabled)playSound(getCurrentSound());
+  if(settings.ttsEnabled)speak(msg.body.substring(0,120));
+  if(currentTab!=='messages')showToast(`📦 Yeni: ${msg.keyword} mesajı!`);
+});
+
+socket.on('messages_cleared',()=>{messages=[];unreadCount=0;renderMessages();updateBadge();});
+socket.on('settings_updated',s=>{Object.assign(settings,s);renderSettings();});
+
+async function init(){
+  try{
+    const[mr,sr]=await Promise.all([fetch('/api/messages').then(r=>r.json()),fetch('/api/settings').then(r=>r.json())]);
+    messages=mr;Object.assign(settings,sr);
+    unreadCount=messages.filter(m=>!m.read).length;
+    renderMessages();renderSettings();updateBadge();
+  }catch(e){console.error(e);}
+}
+
+function renderMessages(){
+  const list=document.getElementById('messagesList');
+  document.getElementById('msgCount').textContent=`${messages.length} mesaj`;
+  if(messages.length===0){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📡</div><div class="empty-title">Henüz mesaj yok</div><div>WhatsApp gruplarından filtreli<br>mesajlar burada görünecek</div></div>`;
     return;
   }
-
-  list.innerHTML = messages.map(msg => {
-    const time = new Date(msg.timestamp).toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
-    const date = new Date(msg.timestamp).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
-
-    // Keyword highlight
-    let bodyHtml = escapeHtml(msg.body);
-    settings.keywords.forEach(kw => {
-      const re = new RegExp(`(${escapeRegex(kw)})`, 'gi');
-      bodyHtml = bodyHtml.replace(re, '<span class="highlight">$1</span>');
+  list.innerHTML=messages.map(msg=>{
+    const time=new Date(msg.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    const date=new Date(msg.timestamp).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'});
+    const isExpanded=expandedMessages.has(msg.id);
+    const isLong=msg.body.length>200;
+    let bodyHtml=escapeHtml(msg.body);
+    settings.keywords.forEach(kw=>{
+      bodyHtml=bodyHtml.replace(new RegExp(`(${escapeRegex(kw)})`,'gi'),'<span class="highlight">$1</span>');
     });
-
-    // Phone chips
-    const phonesHtml = msg.phones && msg.phones.length > 0
-      ? `<div class="phones-row">${msg.phones.map(p => {
-          const clean = p.replace(/\D/g, '');
-          const dialNum = clean.startsWith('0') ? '+9' + clean : (clean.startsWith('90') ? '+' + clean : '+90' + clean);
-          return `<a class="phone-chip" href="tel:${dialNum}">
+    const phonesHtml=msg.phones&&msg.phones.length>0
+      ?`<div class="phones-row">${msg.phones.map(p=>{
+          const clean=p.replace(/\D/g,'');
+          const dial=clean.startsWith('90')?'+'+clean:(clean.startsWith('0')?'+9'+clean:'+90'+clean);
+          return`<a class="phone-chip" href="tel:${dial}" onclick="event.stopPropagation()">
             <span class="phone-icon">📞</span>
-            <span class="phone-num">${formatPhone(clean)}</span>
+            <div class="phone-info"><span class="phone-label">Tıkla &amp; Ara</span><span class="phone-num">${formatPhone(clean)}</span></div>
           </a>`;
-        }).join('')}</div>`
-      : '';
-
-    return `<div class="msg-card ${msg.read ? '' : 'unread'}" onclick="markRead('${msg.id}', this)">
+        }).join('')}</div>`:'';
+    return`<div class="msg-card ${msg.read?'':'unread'}" onclick="markRead('${msg.id}',this)">
       <div class="msg-header">
         <div class="msg-meta">
           <div class="msg-sender">${escapeHtml(msg.sender)}</div>
-          ${msg.group ? `<div class="msg-group">📱 ${escapeHtml(msg.group)}</div>` : ''}
+          ${msg.group?`<div class="msg-group">📱 ${escapeHtml(msg.group)}</div>`:''}
         </div>
         <div class="msg-time">${date} ${time}</div>
       </div>
       <div class="keyword-tag">🏷 ${escapeHtml(msg.keyword)}</div>
-      <div class="msg-body">${bodyHtml}</div>
+      <div class="msg-body${isLong&&!isExpanded?' msg-body-short':''}">${bodyHtml}</div>
+      ${isLong?`<button class="btn-expand" onclick="event.stopPropagation();toggleExpand('${msg.id}')">${isExpanded?'▲ Kapat':'▼ Devamını gör'}</button>`:''}
       ${phonesHtml}
     </div>`;
   }).join('');
 }
 
-function formatPhone(num) {
-  const n = num.replace(/\D/g, '').replace(/^90/, '0').replace(/^9/, '0');
-  if (n.length === 11) return `${n.slice(0,4)} ${n.slice(4,7)} ${n.slice(7,9)} ${n.slice(9)}`;
-  return n;
+function toggleExpand(id){
+  expandedMessages.has(id)?expandedMessages.delete(id):expandedMessages.add(id);
+  renderMessages();
+}
+function formatPhone(n){
+  n=n.replace(/\D/g,'').replace(/^90/,'0').replace(/^9/,'0');
+  return n.length===11?`${n.slice(0,4)} ${n.slice(4,7)} ${n.slice(7,9)} ${n.slice(9)}`:n;
+}
+function markRead(id,el){
+  const m=messages.find(m=>m.id===id);
+  if(m&&!m.read){m.read=true;el.classList.remove('unread');unreadCount=Math.max(0,unreadCount-1);updateBadge();fetch(`/api/messages/${id}/read`,{method:'POST'});}
+}
+function updateBadge(){
+  const b=document.getElementById('unreadBadge');
+  if(unreadCount>0){b.style.display='inline-block';b.textContent=unreadCount>99?'99+':unreadCount;}
+  else b.style.display='none';
+}
+async function clearMessages(){
+  if(!confirm('Tüm mesajlar silinsin mi?'))return;
+  await fetch('/api/messages',{method:'DELETE'});
+  messages=[];unreadCount=0;expandedMessages.clear();renderMessages();updateBadge();
 }
 
-function markRead(id, el) {
-  const msg = messages.find(m => m.id === id);
-  if (msg && !msg.read) {
-    msg.read = true;
-    el.classList.remove('unread');
-    unreadCount = Math.max(0, unreadCount - 1);
-    updateBadge();
-    fetch(`/api/messages/${id}/read`, { method: 'POST' });
-  }
-}
-
-function updateBadge() {
-  const badge = document.getElementById('unreadBadge');
-  if (unreadCount > 0) {
-    badge.style.display = 'inline-block';
-    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-async function clearMessages() {
-  if (!confirm('Tüm mesajlar silinsin mi?')) return;
-  await fetch('/api/messages', { method: 'DELETE' });
-  messages = []; unreadCount = 0;
-  renderMessages(); updateBadge();
-}
-
-// ── Render Settings ──
-function renderSettings() {
-  // keywords
-  const chips = document.getElementById('keywordsChips');
-  chips.innerHTML = settings.keywords.map(kw =>
+function renderSettings(){
+  document.getElementById('keywordsChips').innerHTML=settings.keywords.map(kw=>
     `<div class="kw-chip">${escapeHtml(kw)}<button class="kw-remove" onclick="removeKeyword('${escapeHtml(kw)}')">✕</button></div>`
   ).join('');
-  document.getElementById('soundToggle').checked = settings.soundEnabled;
-  document.getElementById('ttsToggle').checked = settings.ttsEnabled;
+  document.getElementById('soundToggle').checked=settings.soundEnabled;
+  document.getElementById('ttsToggle').checked=settings.ttsEnabled;
+  document.querySelectorAll('.sound-option').forEach(o=>o.classList.toggle('selected',o.dataset.sound===(settings.selectedSound||'double_beep')));
+  document.getElementById('timeBasedToggle').checked=settings.timeBased||false;
+  document.getElementById('dayStart').value=settings.dayStart||'07:00';
+  document.getElementById('nightStart').value=settings.nightStart||'22:00';
+  document.getElementById('daySound').value=settings.daySound||'soft_chime';
+  document.getElementById('nightSound').value=settings.nightSound||'long_beep';
 }
-
-async function saveSettings() {
-  settings.soundEnabled = document.getElementById('soundToggle').checked;
-  settings.ttsEnabled = document.getElementById('ttsToggle').checked;
-  await fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  });
-  showToast('Ayarlar kaydedildi ✓');
+async function saveSettings(){
+  settings.soundEnabled=document.getElementById('soundToggle').checked;
+  settings.ttsEnabled=document.getElementById('ttsToggle').checked;
+  await postSettings();showToast('Ayarlar kaydedildi ✓');
 }
-
-function addKeyword() {
-  const input = document.getElementById('kwInput');
-  const val = input.value.trim();
-  if (!val || settings.keywords.includes(val)) return;
-  settings.keywords.push(val);
-  input.value = '';
-  saveSettingsKeywords();
-  renderSettings();
+async function saveTimeSettings(){
+  settings.timeBased=document.getElementById('timeBasedToggle').checked;
+  settings.dayStart=document.getElementById('dayStart').value;
+  settings.nightStart=document.getElementById('nightStart').value;
+  settings.daySound=document.getElementById('daySound').value;
+  settings.nightSound=document.getElementById('nightSound').value;
+  await postSettings();showToast('Saat ayarı kaydedildi ✓');
 }
-
-function removeKeyword(kw) {
-  settings.keywords = settings.keywords.filter(k => k !== kw);
-  saveSettingsKeywords();
-  renderSettings();
+async function postSettings(){
+  await fetch('/api/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(settings)});
 }
-
-async function saveSettingsKeywords() {
-  await fetch('/api/settings', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
-  });
+function addKeyword(){
+  const inp=document.getElementById('kwInput'),val=inp.value.trim();
+  if(!val||settings.keywords.includes(val))return;
+  settings.keywords.push(val);inp.value='';postSettings();renderSettings();
 }
-
-// ── Tab switching ──
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    const tabs = ['messages', 'connect', 'settings'];
-    t.classList.toggle('active', tabs[i] === tab);
-  });
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+function removeKeyword(kw){settings.keywords=settings.keywords.filter(k=>k!==kw);postSettings();renderSettings();}
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['messages','connect','settings'][i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById(`panel-${tab}`).classList.add('active');
-  if (tab === 'messages') { unreadCount = 0; updateBadge(); }
+  if(tab==='messages'){unreadCount=0;updateBadge();}
 }
-
-// ── Toast ──
-function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
 }
+function escapeHtml(s){return s?s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''}
+function escapeRegex(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
 
-// ── Helpers ──
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// Unlock audio on first touch (iOS requirement)
-document.addEventListener('touchstart', () => { if (!audioCtx) getAudioCtx(); }, { once: true });
-
+document.addEventListener('touchstart',()=>{if(!audioCtx)getCtx();},{once:true});
+document.addEventListener('click',()=>{if(!audioCtx)getCtx();},{once:true});
 init();
 </script>
 </body>
